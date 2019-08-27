@@ -24,7 +24,7 @@ public class AssignmentRule implements Rule {
     }
 
     @Override
-    public void evaluate(Context context) throws SimulationException {
+    public void evaluate(Context context) {
         if (individualIndex == -1){
             setValue(context.getEnvironment(), context);
         } else{
@@ -32,7 +32,7 @@ public class AssignmentRule implements Rule {
         }
     }
 
-    private void setValue(AbstractDataContainer container, Context context) throws SimulationException{
+    private void setValue(AbstractDataContainer container, Context context){
             container.set(varIndex, expression.apply(context));
     }
 }

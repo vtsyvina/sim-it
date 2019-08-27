@@ -1,14 +1,25 @@
 package sim.core.model;
 
+import java.util.Random;
+
 public class Context {
     private Environment currentEnvironment;
     private Population currentPopulation;
+
+    private Random random;
 
     private int time = 0;
 
     public Context(Environment startEnvironment, Population startPopulation) {
         this.currentEnvironment = startEnvironment;
         this.currentPopulation = startPopulation;
+        random = new Random();
+    }
+
+    public Context(Environment startEnvironment, Population startPopulation, int randomSeed){
+        this.currentEnvironment = startEnvironment;
+        this.currentPopulation = startPopulation;
+        random = new Random(randomSeed);
     }
 
     public void updateCurrent(Environment startEnvironment, Population startPopulation) {
@@ -26,6 +37,18 @@ public class Context {
 
     public int getTime(){
         return time;
+    }
+
+    public int getInt(int bound){
+        return random.nextInt(bound);
+    }
+
+    public int getInt(int lowerBound, int upperBound){
+        return lowerBound+random.nextInt(upperBound-lowerBound);
+    }
+
+    public double getDouble(){
+        return random.nextDouble();
     }
 
     /**

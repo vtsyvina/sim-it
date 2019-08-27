@@ -6,7 +6,7 @@
 
     <groupId>sim</groupId>
     <artifactId>sim-it</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.2</version>
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>

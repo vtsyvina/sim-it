@@ -1,8 +1,8 @@
 package sim.core.rule;
 
-import sim.core.exception.SimulationException;
 import sim.core.model.Context;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class BlockRule implements Rule {
@@ -13,8 +13,13 @@ public class BlockRule implements Rule {
          this.rules = rules;
      }
 
+     public BlockRule(Rule rule){
+         rules = new ArrayList<>();
+         rules.add(rule);
+     }
+
     @Override
-    public void evaluate(Context context) throws SimulationException {
+    public void evaluate(Context context) {
         for (Rule rule : rules) {
             rule.evaluate(context);
         }

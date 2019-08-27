@@ -1,7 +1,8 @@
 package sim.core.rule;
 
-import sim.core.exception.SimulationException;
 import sim.core.model.Context;
+
+import java.util.List;
 
 public class RuleExecutor {
 
@@ -11,14 +12,12 @@ public class RuleExecutor {
         this.mainRule = mainRule;
     }
 
+    public RuleExecutor(List<Rule> rules){
+        this.mainRule = new BlockRule(rules);
+    }
+
     public void iterate(Context context){
-        try {
-            mainRule.evaluate(context);
-        } catch (SimulationException e) {
-            e.printStackTrace();
-            System.out.println("The error occurred during block execution");
-            System.exit(1);
-        }
+        mainRule.evaluate(context);
         context.endIteration();
     }
 }

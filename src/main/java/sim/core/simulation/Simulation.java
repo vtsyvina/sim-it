@@ -23,4 +23,8 @@ public class Simulation {
         System.out.println("END");
         System.out.println(context);
     }
+
+    public Context getContext(){
+        return context;
+    }
 }
