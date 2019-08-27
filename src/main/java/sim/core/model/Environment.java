@@ -1,16 +1,10 @@
 package sim.core.model;
 
-import java.util.Map;
+import java.util.List;
 
 public class Environment extends AbstractDataContainer {
-    public Environment() {
-    }
 
-    public Environment(Map<String, Double> env) {
-        super(env);
-    }
-
-    public Environment copy() {
-        return new Environment(env);
+    public Environment(List<String> variables, double[] initValues, int iterations) {
+        super(variables, initValues, iterations);
     }
 }

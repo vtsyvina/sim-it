@@ -6,11 +6,9 @@ import java.util.List;
 public class Population {
     private List<Individual> individuals = new ArrayList<>();
 
-    private Population(){}
-
-    public Population(int size){
+    public Population(int size, List<String> variables, double[][] initValues, int iterations){
         for (int i = 0; i < size; i++) {
-            individuals.add(new Individual());
+            individuals.add(new Individual(i, variables, initValues[i], iterations));
         }
     }
 
@@ -22,12 +20,8 @@ public class Population {
         return individuals.get(index);
     }
 
-    public Population copy(){
-        Population result = new Population();
-        for (Individual individual : this.individuals) {
-            result.individuals.add(individual.copy());
-        }
-        return result;
+    public int getVariableIndex(String name){
+        return individuals.get(0).getNamesMap().get(name);
     }
 
     @Override

@@ -1,15 +1,10 @@
 package sim.core.model;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class Context {
     private Environment currentEnvironment;
     private Population currentPopulation;
-    private List<Environment> previousEnvironment = new ArrayList<>();
-    private List<Population> previousPopulation = new ArrayList<>();
 
-    public Context(){}
+    private int time = 0;
 
     public Context(Environment startEnvironment, Population startPopulation) {
         this.currentEnvironment = startEnvironment;
@@ -21,13 +16,6 @@ public class Context {
         this.currentPopulation = startPopulation;
     }
 
-    public Context(Environment currentEnvironment, Population currentPopulation, List<Environment> previousEnvironment, List<Population> previousPopulation) {
-        this.currentEnvironment = currentEnvironment;
-        this.currentPopulation = currentPopulation;
-        this.previousEnvironment = previousEnvironment;
-        this.previousPopulation = previousPopulation;
-    }
-
     public Environment getEnvironment(){
         return currentEnvironment;
     }
@@ -36,19 +24,21 @@ public class Context {
         return currentPopulation;
     }
 
-    public Context copy(){
-        return new Context(currentEnvironment.copy(), currentPopulation.copy(), previousEnvironment, previousPopulation);
-    }
-
     public int getTime(){
-        return previousEnvironment.size();
+        return time;
     }
 
-
-    public void addCurrentContextToPreviousIterations(){
-        previousEnvironment.add(currentEnvironment);
-        previousPopulation.add(currentPopulation);
+    /**
+     * Ends iteration by updating time and copy values to the next row in environment and population(in case )
+     */
+    public void endIteration(){
+        time++;
+        for (int i = 0; i < getPopulation().size(); i++) {
+            getPopulation().getIndividual(i).endIteration();
+        }
+        getEnvironment().endIteration();
     }
+
 
     @Override
     public String toString() {

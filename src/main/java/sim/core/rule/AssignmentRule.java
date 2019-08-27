@@ -1,39 +1,38 @@
 package sim.core.rule;
 
 import sim.core.exception.SimulationException;
-import sim.core.expression.Expression;
 import sim.core.model.AbstractDataContainer;
 import sim.core.model.Context;
-import sim.core.model.Environment;
-import sim.core.model.Population;
+
+import java.util.function.Function;
 
 public class AssignmentRule implements Rule {
 
-    private String varName;
+    private int varIndex;
     private int individualIndex = -1;
-    private Expression expression;
+    private Function<Context, Double> expression;
 
-    public AssignmentRule(String varName, int individualIndex, Expression expression){
-        this.varName = varName;
+    public AssignmentRule(int varIndex, int individualIndex, Function<Context, Double> expression){
+        this.varIndex = varIndex;
         this.expression = expression;
         this.individualIndex = individualIndex;
     }
 
-    public AssignmentRule(String varName, Expression expression){
-        this.varName = varName;
+    public AssignmentRule(int varIndex, Function<Context, Double> expression){
+        this.varIndex = varIndex;
         this.expression = expression;
     }
 
     @Override
-    public void evaluate(Context context, Environment newEnvironment, Population newPopulation) throws SimulationException {
+    public void evaluate(Context context) throws SimulationException {
         if (individualIndex == -1){
-            setValue(newEnvironment, context);
+            setValue(context.getEnvironment(), context);
         } else{
-            setValue(newPopulation.getIndividual(individualIndex), context);
+            setValue(context.getPopulation().getIndividual(individualIndex), context);
         }
     }
 
     private void setValue(AbstractDataContainer container, Context context) throws SimulationException{
-            container.set(varName, expression.evaluateDouble(context));
+            container.set(varIndex, expression.apply(context));
     }
 }
