@@ -61,7 +61,7 @@ public abstract class AbstractDataContainer {
     }
 
     public int getVariableIndex(String name){
-        return namesMap.get(name);
+        return namesMap.getOrDefault(name, -1);
     }
 
     @Override

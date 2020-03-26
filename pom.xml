@@ -6,13 +6,20 @@
 
     <groupId>sim</groupId>
     <artifactId>sim-it</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
+    <dependencies>
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr4-runtime</artifactId>
+            <version>4.7</version>
+        </dependency>
+    </dependencies>
     <build>
-
+        <sourceDirectory>src</sourceDirectory>
         <plugins>
             <plugin>
                 <!-- Build an executable JAR -->
@@ -24,8 +31,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>14</source>
+                    <target>14</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -49,6 +56,26 @@
                         <phase>package</phase>
                         <goals>
                             <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Plugin to compile the g4 files ahead of the java files
+           See https://github.com/antlr/antlr4/blob/master/antlr4-maven-plugin/src/site/apt/examples/simple.apt.vm
+           Except that the grammar does not need to contain the package declaration as stated in the documentation (I do not know why)
+           To use this plugin, type:
+             mvn antlr4:antlr4
+           In any case, Maven will invoke this plugin before the Java source is compiled
+        -->
+            <plugin>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr4-maven-plugin</artifactId>
+                <version>4.7</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>antlr4</goal>
                         </goals>
                     </execution>
                 </executions>

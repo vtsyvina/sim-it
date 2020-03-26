@@ -4,20 +4,42 @@ import sim.core.expression.Expressions;
 import sim.core.model.Context;
 import sim.core.model.Environment;
 import sim.core.model.Population;
-import sim.core.rule.BlockRule;
 import sim.core.rule.Rule;
 import sim.core.rule.RuleExecutor;
 import sim.core.rule.Rules;
 import sim.core.simulation.Simulation;
+import sim.grammar.SimItGrammarParser;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 public class Start {
+
+    /**
+     * ctrl+shift+G to generate grammar in s4 file
+     * @param args
+     */
     public static void main(String[] args) {
         System.out.println("Sim it!");
-        toyExample();
+        SimItGrammarParser simItGrammarListener = new SimItGrammarParser();
+        Simulation simulation = simItGrammarListener.parseToSimulation(fileToString("examples/complex_percent.txt"));
+        simulation.run();
+        Context context = simulation.getContext();
+        System.out.println();
+//        toyExample();
+    }
+
+    public static String fileToString(String filename){
+        try {
+            return new String(Files.readAllBytes(Paths.get(filename)));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private static void toyExample() {
