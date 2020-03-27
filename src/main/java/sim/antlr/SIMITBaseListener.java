@@ -172,6 +172,18 @@ public class SIMITBaseListener implements SIMITListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterNumber_comparison(SIMITParser.Number_comparisonContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitNumber_comparison(SIMITParser.Number_comparisonContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterLogical_operation(SIMITParser.Logical_operationContext ctx) { }
 	/**
 	 * {@inheritDoc}

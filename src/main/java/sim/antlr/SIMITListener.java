@@ -138,6 +138,16 @@ public interface SIMITListener extends ParseTreeListener {
 	 */
 	void exitBoolean_expression(SIMITParser.Boolean_expressionContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link SIMITParser#number_comparison}.
+	 * @param ctx the parse tree
+	 */
+	void enterNumber_comparison(SIMITParser.Number_comparisonContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SIMITParser#number_comparison}.
+	 * @param ctx the parse tree
+	 */
+	void exitNumber_comparison(SIMITParser.Number_comparisonContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link SIMITParser#logical_operation}.
 	 * @param ctx the parse tree
 	 */

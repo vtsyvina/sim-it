@@ -71,4 +71,25 @@ public abstract class AbstractDataContainer {
         sb.append("}");
         return sb.toString();
     }
+
+    public void print(){
+        print(15);
+    }
+    public void print(int width){
+        String[] names = new String[namesMap.size()];
+        namesMap.forEach((k,v) -> names[v] = k);
+        System.out.print(String.format("%5s", "it"));
+        for (int i = 0; i < names.length; i++) {
+            System.out.print(String.format("%"+width+"s", names[i]));
+        }
+        System.out.println();
+        for (int i = 0; i < env.length; i++) {
+            System.out.print(String.format("%5d", i));
+            for (int j = 0; j < env[i].length; j++) {
+                System.out.print(String.format("%"+width+"f", env[i][j]));
+            }
+            System.out.println();
+        }
+
+    }
 }

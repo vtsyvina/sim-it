@@ -22,7 +22,7 @@ public class Simulation {
             ruleExecutor.iterate(context);
         }
         System.out.println("END");
-        System.out.println(context);
+//        System.out.println(context);
     }
 
     public Context getContext(){

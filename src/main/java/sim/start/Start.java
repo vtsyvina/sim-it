@@ -29,7 +29,10 @@ public class Start {
         Simulation simulation = simItGrammarListener.parseToSimulation(fileToString("examples/complex_percent.txt"));
         simulation.run();
         Context context = simulation.getContext();
+        context.getEnvironment().print();
         System.out.println();
+        System.out.println(simItGrammarListener.calcNumber);
+        System.out.println(simItGrammarListener.calcBool);
 //        toyExample();
     }
 

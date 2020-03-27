@@ -3,12 +3,21 @@ iterations = 50;
 money=100;
 interest=0.01;
 per_month=50;
-d = -15;
+d = 10;
 init_population:
 size=50;
 v=10;
 m=20;
 
 rules:
-d=d-5;
+d=10+d*1.001;
+if (money > 1000){
+    interest = 0;
+}
+if (-d > money){
+    d = -d;
+}
 money=money*(1+interest)+per_month;
+if (money > (2000+per_month^2/10)){
+    per_month = 100;
+}

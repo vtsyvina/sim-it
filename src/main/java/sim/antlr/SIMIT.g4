@@ -14,10 +14,13 @@ initPop:
     'init_population:'
     popSize
     initPopVar ( initPopVar)*;
+
 initEnvVar:
     IDENTIFIER '=' (PLUS|MINUS)? NUMBER ';';
+
 initPopVar:
     IDENTIFIER '=' (PLUS|MINUS)? NUMBER ';';
+
 popSize:
     'size=' NUMBER ';';
 assignment:
@@ -29,13 +32,14 @@ ru:
 rules:
     ru (ru)*;
 
-// d=d-5; - causes problem line 13:3 extraneous input '-5' expecting ';'
+
 number_expression:
+number_expression operation number_expression|
     (PLUS|MINUS)? NUMBER |
-    IDENTIFIER |
-    aggregate_function |
-    OP number_expression CP |
-    number_expression operation number_expression
+    (PLUS|MINUS)? IDENTIFIER |
+//    aggregate_function |
+    OP number_expression CP
+
     ;
 operation:
     '+' | '-' | '*' | '/' | '^';
@@ -51,22 +55,29 @@ MINUS:
 //    '^';
 boolean_expression:
     BOOL |
-    number_expression '==' number_expression |
-    number_expression '<' number_expression |
-    number_expression '>' number_expression |
-    number_expression '<=' number_expression |
-    number_expression '>=' number_expression |
+    number_expression number_comparison number_expression |
     OP boolean_expression CP |
     boolean_expression logical_operation boolean_expression |
-    '!' boolean_expression |
+    NOT boolean_expression |
     ;
+number_comparison:
+    '==' | '<' | '>' | '>=' | '<=';
 logical_operation:
-    '&&' | '||' | '==';
+    '&&' | '||' | '==' | '!=';
+
+NOT:
+    '!';
 if_rule:
 IF boolean_expression '{'
 rules
-'}'
+'}' |
+IF boolean_expression '{'
+rules '}' ELSE '{'
+rules '}'
 ;
+
+ELSE:
+    'else';
 
 aggregate_function:
     'avg(' IDENTIFIER ')'
