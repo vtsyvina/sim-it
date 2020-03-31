@@ -6,7 +6,7 @@
 
     <groupId>sim</groupId>
     <artifactId>sim-it</artifactId>
-    <version>1.0.3</version>
+    <version>1.0.6</version>
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -17,9 +17,17 @@
             <artifactId>antlr4-runtime</artifactId>
             <version>4.7</version>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/junit/junit -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
     <build>
-        <sourceDirectory>src</sourceDirectory>
         <plugins>
             <plugin>
                 <!-- Build an executable JAR -->

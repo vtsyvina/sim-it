@@ -18,7 +18,7 @@ public class Simulation {
 
     public void run(){
         System.out.println("Start iterations");
-        for (int i = 1; i < iterationNumber; i++) {
+        for (int i = 1; i <= iterationNumber; i++) {
             ruleExecutor.iterate(context);
         }
         System.out.println("END");

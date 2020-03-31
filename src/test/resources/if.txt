@@ -1,0 +1,11 @@
+init_environment:
+iterations = 10;
+it=0;
+init_population:
+size=50;
+
+rules:
+it=time;
+if (time > 2 && time < 5){
+it = 0;
+}

@@ -7,13 +7,13 @@ mainblock throws GrammarParseException:
     rules
     ;
 initEnv:
-    'init_environment:' initIterations initEnvVar (initEnvVar)*;
+    'init_environment:' initIterations initEnvVar? (initEnvVar)*;
 initIterations:
     'iterations' '=' NUMBER ';';
 initPop:
     'init_population:'
     popSize
-    initPopVar ( initPopVar)*;
+    initPopVar? ( initPopVar)*;
 
 initEnvVar:
     IDENTIFIER '=' (PLUS|MINUS)? NUMBER ';';
@@ -38,15 +38,21 @@ number_expression operation number_expression|
     (PLUS|MINUS)? NUMBER |
     (PLUS|MINUS)? IDENTIFIER |
 //    aggregate_function |
-    OP number_expression CP
-
+    OP number_expression CP |
+    rand_function | max_function | min_function
     ;
 operation:
-    '+' | '-' | '*' | '/' | '^';
+    '+' | '-' | '*' | '/' | '^' | '%';
 PLUS:
     '+';
 MINUS:
     '-';
+rand_function:
+    'rand' OP number_expression ',' number_expression CP;
+max_function:
+    'max' OP number_expression ',' number_expression CP;
+min_function:
+    'min' OP number_expression ',' number_expression CP;
 //MULTIPLY:
 //    '*';
 //DIVIDE:
@@ -80,7 +86,7 @@ ELSE:
     'else';
 
 aggregate_function:
-    'avg(' IDENTIFIER ')'
+    'avg' OP IDENTIFIER CP
     ;
 
 NUMBER

@@ -21,6 +21,7 @@ import sim.core.simulation.Simulation;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.Stack;
 import java.util.function.Function;
 
@@ -42,6 +43,7 @@ public class SimItGrammarParser extends SIMITBaseListener {
     int iterations;
     public int calcNumber = 0;
     public int calcBool = 0;
+    private Random rand = new Random();
 
 
     public Simulation parseToSimulation(String test) {
@@ -238,6 +240,8 @@ public class SimItGrammarParser extends SIMITBaseListener {
         Interval sourceInterval = ctx.getSourceInterval();
         List<Token> tokens = commonTokenStream.get(sourceInterval.a, sourceInterval.b);
         Stack<Token> stack = new Stack<>();
+        //https://en.wikipedia.org/wiki/Shunting-yard_algorithm
+        // with small adjustment for expressions in functions. Wiki example works only for constants as arguments
         for (Token token : tokens) {
             // if postfix function (like !) or number/identificator then add to result
             if ("NUMBER".equals(vocabulary.getSymbolicName(token.getType()))) {
@@ -246,20 +250,30 @@ public class SimItGrammarParser extends SIMITBaseListener {
             }
             if ("IDENTIFIER".equals(vocabulary.getSymbolicName(token.getType()))) {
                 result.add(new Tok(TokType.ID, token.getText(), 0));
+                continue;
+            }
+            if (isFunction(token)) {
+                stack.push(token);
+                continue;
             }
 
             // if prefix function, like sin, sum,... then put into stack
             // if OP then put to stack
-            if ("OP".equals(vocabulary.getSymbolicName(token.getType()))) {
+            if (isOP(token)) {
                 stack.push(token);
                 continue;
             }
             // pop stack to result until OP
-            if ("CP".equals(vocabulary.getSymbolicName(token.getType()))) {
+            if (isCP(token)) {
                 Token cur = stack.pop();
-                while (!"OP".equals(vocabulary.getSymbolicName(cur.getType()))) {
-                    result.add(new Tok(TokType.OP, cur.getText(), 0));
+                while (!isOP(cur)) {
+                    if (!isComma(cur)) {
+                        result.add(new Tok(TokType.OP, cur.getText(), 0));
+                    }
                     cur = stack.pop();
+                }
+                if (!stack.empty() && isOP(stack.peek())) {
+                    stack.pop();
                 }
                 continue;
             }
@@ -269,8 +283,15 @@ public class SimItGrammarParser extends SIMITBaseListener {
             if (isBinaryOperation(token)) {
                 if (!stack.empty()) {
                     Token cur = stack.peek();
-                    while (hasHigherPriority(cur, token) && !stack.empty()) {
-                        result.add(new Tok(TokType.OP, cur.getText(), 0));
+                    while ((!isBinaryOperation(cur)
+                            || (isBinaryOperation(cur) && hasHigherPriority(cur, token))
+                            || (hasEqualPriority(cur, token) && isLeftAssociative(token)))
+                            && !isOP(cur)
+                    ) {
+                        if (!isComma(cur)) {
+                            result.add(new Tok(TokType.OP, cur.getText(), 0));
+                        }
+
                         stack.pop();
                         if (!stack.empty()) {
                             cur = stack.peek();//  don't pop if priority is less
@@ -278,12 +299,36 @@ public class SimItGrammarParser extends SIMITBaseListener {
                     }
                 }
                 stack.push(token);
+                continue;
+            }
+
+            if (isComma(token)) {
+                Token cur = stack.peek();
+                while (!(isOP(cur) || isComma(cur))) {
+                    result.add(new Tok(TokType.OP, cur.getText(), 0));
+                    stack.pop();
+                    if (!stack.empty()) {
+                        cur = stack.peek();//  don't pop if priority is less
+                    }
+                }
+                stack.push(token);
+
             }
         }
         while (!stack.empty()) {
-            result.add(new Tok(TokType.OP, stack.pop().getText(), 0));
+            Token pop = stack.pop();
+            if (!isComma(pop)) {
+                result.add(new Tok(TokType.OP, pop.getText(), 0));
+            }
+
         }
         return result;
+    }
+
+    private boolean isFunction(Token token) {
+        return "'rand'".equals(vocabulary.getLiteralName(token.getType()))
+                || "'max'".equals(vocabulary.getLiteralName(token.getType()))
+                || "'min'".equals(vocabulary.getLiteralName(token.getType()));
     }
 
     private boolean isBinaryOperation(Token token) {
@@ -294,6 +339,7 @@ public class SimItGrammarParser extends SIMITBaseListener {
             case "'^'":
             case "'*'":
             case "'/'":
+            case "'%'":
             case "'+'":
             case "'-'":
                 return true;
@@ -308,6 +354,29 @@ public class SimItGrammarParser extends SIMITBaseListener {
         return sp <= cp;
     }
 
+    private boolean hasEqualPriority(Token stackToken, Token consideredToken) {
+        int sp = operationPriority(vocabulary.getLiteralName(stackToken.getType()));
+        int cp = operationPriority(vocabulary.getLiteralName(consideredToken.getType()));
+        return sp == cp;
+    }
+
+    private boolean isOP(Token token) {
+        return "OP".equals(vocabulary.getSymbolicName(token.getType()));
+    }
+
+    private boolean isCP(Token token) {
+        return "CP".equals(vocabulary.getSymbolicName(token.getType()));
+    }
+
+    private boolean isComma(Token token) {
+        return "','".equals(vocabulary.getLiteralName(token.getType()));
+    }
+
+    // only ^ is right associative
+    private boolean isLeftAssociative(Token token) {
+        return !"'^'".equals(token.getText());
+    }
+
     private int operationPriority(String operation) {
         if (operation == null) {
             return 0;
@@ -318,6 +387,7 @@ public class SimItGrammarParser extends SIMITBaseListener {
             case "'*'":
                 return 1;
             case "'/'":
+            case "'%'":
                 return 2;
             case "'+'":
                 return 3;
@@ -325,7 +395,10 @@ public class SimItGrammarParser extends SIMITBaseListener {
                 return 4;
             case "'('":
             case "')'":
-                return 5;
+                return -1;
+
+            case "','":
+                return 15;
             default:
                 return 0; // for functions
         }
@@ -339,6 +412,10 @@ public class SimItGrammarParser extends SIMITBaseListener {
                 continue;
             }
             if (token.type == TokType.ID) {
+                if (token.name.equals("time")) {
+                    stack.push(new Tok(TokType.NUM, null, c.getTime()));
+                    continue;
+                }
                 stack.push(new Tok(TokType.NUM, null, c.getEnvironment().get(token.name)));
                 continue;
             }
@@ -368,8 +445,20 @@ public class SimItGrammarParser extends SIMITBaseListener {
                     case "*":
                         stack.push(new Tok(TokType.NUM, null, v1 * v2));
                         break;
+                    case "%":
+                        stack.push(new Tok(TokType.NUM, null, Math.round(v1) % Math.round(v2)));
+                        break;
                     case "^":
                         stack.push(new Tok(TokType.NUM, null, Math.pow(v1, v2)));
+                        break;
+                    case "rand":
+                        stack.push(new Tok(TokType.NUM, null, v1 + (v2 - v1) * rand.nextDouble()));
+                        break;
+                    case "max":
+                        stack.push(new Tok(TokType.NUM, null, Math.max(v1, v2)));
+                        break;
+                    case "min":
+                        stack.push(new Tok(TokType.NUM, null, Math.min(v1, v2)));
                         break;
                 }
             }
@@ -381,9 +470,6 @@ public class SimItGrammarParser extends SIMITBaseListener {
         public TokType type;
         public String name;
         public double value;
-
-        public Tok() {
-        }
 
         public Tok(TokType type, String name, double value) {
             this.type = type;
@@ -403,7 +489,7 @@ public class SimItGrammarParser extends SIMITBaseListener {
     }
 
     private enum TokType {
-        NUM, ID, OP, FUN
+        NUM, ID, OP
     }
 
 }

@@ -1,0 +1,16 @@
+init_environment:
+iterations =100;
+money=0;
+e=2;
+mod=0;
+r=0;
+m=0;
+init_population:
+size=50;
+v=10;
+
+rules:
+money=(3.4+2^(5-e))/(1+5/5);
+mod=time%10.1;
+r=2+rand(1.4+2, 3+4);
+m=max(4+4,min(1*10,2+(3-e)));

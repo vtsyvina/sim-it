@@ -128,6 +128,36 @@ public interface SIMITListener extends ParseTreeListener {
 	 */
 	void exitOperation(SIMITParser.OperationContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link SIMITParser#rand_function}.
+	 * @param ctx the parse tree
+	 */
+	void enterRand_function(SIMITParser.Rand_functionContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SIMITParser#rand_function}.
+	 * @param ctx the parse tree
+	 */
+	void exitRand_function(SIMITParser.Rand_functionContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link SIMITParser#max_function}.
+	 * @param ctx the parse tree
+	 */
+	void enterMax_function(SIMITParser.Max_functionContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SIMITParser#max_function}.
+	 * @param ctx the parse tree
+	 */
+	void exitMax_function(SIMITParser.Max_functionContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link SIMITParser#min_function}.
+	 * @param ctx the parse tree
+	 */
+	void enterMin_function(SIMITParser.Min_functionContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SIMITParser#min_function}.
+	 * @param ctx the parse tree
+	 */
+	void exitMin_function(SIMITParser.Min_functionContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link SIMITParser#boolean_expression}.
 	 * @param ctx the parse tree
 	 */

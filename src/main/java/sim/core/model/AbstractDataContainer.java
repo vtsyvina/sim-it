@@ -11,7 +11,7 @@ public abstract class AbstractDataContainer {
     protected int time;
 
     public AbstractDataContainer(List<String> variables, double[] initValues, int iterations) {
-        env = new double[iterations][variables.size()];
+        env = new double[iterations+1][variables.size()];
         env[0] = initValues;
         for (int i = 0; i < variables.size(); i++) {
             namesMap.put(variables.get(i), i);

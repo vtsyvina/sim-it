@@ -11,7 +11,7 @@ m=20;
 
 rules:
 d=10+d*1.001;
-if (money > 1000){
+if (time >= 12){
     interest = 0;
 }
 if (-d > money){
