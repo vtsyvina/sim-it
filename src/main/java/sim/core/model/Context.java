@@ -7,8 +7,8 @@ public class Context {
     private Population currentPopulation;
 
     private Random random;
-
-    private int time = 0;
+    // for time = 0 we save initial values, so start with 1
+    private int time = 1;
 
     public Context(Environment startEnvironment, Population startPopulation) {
         this.currentEnvironment = startEnvironment;

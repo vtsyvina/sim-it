@@ -1,8 +1,6 @@
 init_environment:
 iterations = 10;
 it=0;
-init_population:
-size=50;
 
 rules:
 it=time;

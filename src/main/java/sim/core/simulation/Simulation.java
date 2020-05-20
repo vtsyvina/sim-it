@@ -11,17 +11,18 @@ public class Simulation {
     public Simulation(Context context, RuleExecutor ruleExecutor, int iterationNumber) {
         this.context = context;
         // we have initial values on zero
-        context.endIteration();
+//        context.endIteration();
         this.ruleExecutor = ruleExecutor;
         this.iterationNumber = iterationNumber;
     }
 
     public void run(){
+        long start = System.currentTimeMillis();
         System.out.println("Start iterations");
         for (int i = 1; i <= iterationNumber; i++) {
             ruleExecutor.iterate(context);
         }
-        System.out.println("END");
+        System.out.println("END "+(System.currentTimeMillis()-start));
 //        System.out.println(context);
     }
 

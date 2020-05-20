@@ -26,7 +26,8 @@ public class Start {
     public static void main(String[] args) {
         System.out.println("Sim it!");
         SimItGrammarParser simItGrammarListener = new SimItGrammarParser();
-        Simulation simulation = simItGrammarListener.parseToSimulation(fileToString("examples/complex_percent.txt"));
+        Simulation simulation = simItGrammarListener.parseToSimulation(fileToString("examples/complex_percent.txt"),1);
+//        Simulation simulation = simItGrammarListener.parseToSimulation(fileToString("src/test/resources/arithmetic.txt"), 10_000);
         simulation.run();
         Context context = simulation.getContext();
         context.getEnvironment().print();

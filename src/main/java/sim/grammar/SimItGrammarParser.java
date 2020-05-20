@@ -26,12 +26,10 @@ import java.util.Stack;
 import java.util.function.Function;
 
 public class SimItGrammarParser extends SIMITBaseListener {
-    private SIMITParser parser;
     private CommonTokenStream commonTokenStream;
     private Vocabulary vocabulary;
 
     private Simulation simulation;
-    private Context context;
     private Environment environment;
     private Population population;
     private List<String> envVariables = new ArrayList<>();
@@ -43,17 +41,27 @@ public class SimItGrammarParser extends SIMITBaseListener {
     int iterations;
     public int calcNumber = 0;
     public int calcBool = 0;
-    private Random rand = new Random();
-
+    private int saveEach = 1;
+    private Random rand = new Random(1);
 
     public Simulation parseToSimulation(String test) {
+        return parseToSimulation(test, 10_000);
+    }
 
+    public Simulation parseToSimulation(String test, int saveEach) {
+        this.saveEach = saveEach;
         CodePointCharStream inputStream = CharStreams.fromString(test);
         SIMITLexer simitLexer = new SIMITLexer(inputStream);
         commonTokenStream = new CommonTokenStream(simitLexer);
-        parser = new SIMITParser(commonTokenStream);
+        SIMITParser parser = new SIMITParser(commonTokenStream);
         vocabulary = parser.getVocabulary();
+
         SIMITParser.MainblockContext mainblock = parser.mainblock();
+        SIMITParser.InitPopContext initPopContext = mainblock.initPop();
+        // if user didn't add init population block then 0 population
+        if(initPopContext == null){
+            initPop(0);
+        }
         ParseTreeWalker walker = new ParseTreeWalker();
         mainblock.enterRule(this);
         walker.walk(this, mainblock);
@@ -95,7 +103,7 @@ public class SimItGrammarParser extends SIMITBaseListener {
     @Override
     public void exitInitEnv(SIMITParser.InitEnvContext ctx) {
         super.exitInitEnv(ctx);
-        environment = new Environment(envVariables, envValues.stream().mapToDouble(e -> e).toArray(), iterations);
+        environment = new Environment(envVariables, envValues.stream().mapToDouble(e -> e).toArray(), iterations, saveEach);
         System.out.println("Exit init env");
     }
 
@@ -124,13 +132,17 @@ public class SimItGrammarParser extends SIMITBaseListener {
     public void exitInitPop(SIMITParser.InitPopContext ctx) {
         super.exitInitPop(ctx);
         int populationSize = Integer.parseInt(ctx.popSize().NUMBER().getText());
+        initPop(populationSize);
+    }
+
+    private void initPop(int populationSize){
         double[][] initPopValues = new double[populationSize][popVariables.size()];
         for (int i = 0; i < populationSize; i++) {
             for (int j = 0; j < popVariables.size(); j++) {
                 initPopValues[i][j] = popValues.get(j);
             }
         }
-        population = new Population(populationSize, popVariables, initPopValues, iterations);
+        population = new Population(populationSize, popVariables, initPopValues, iterations, saveEach);
     }
 
     @Override
@@ -179,32 +191,25 @@ public class SimItGrammarParser extends SIMITBaseListener {
         if (ctx.logical_operation() != null) {
             Function<Context, Boolean> right = booleanExpression(ctx.boolean_expression(1));
             Function<Context, Boolean> left = booleanExpression(ctx.boolean_expression(0));
-            switch (ctx.logical_operation().getText()) {
-                case "==":
-                    return (c) -> left.apply(c) == right.apply(c);
-                case "&&":
-                    return (c) -> left.apply(c) && right.apply(c);
-                case "||":
-                    return (c) -> left.apply(c) || right.apply(c);
-                case "!=":
-                    return (c) -> left.apply(c) != right.apply(c);
-            }
+            return switch (ctx.logical_operation().getText()) {
+                case "==" -> (c) -> left.apply(c) == right.apply(c);
+                case "&&" -> (c) -> left.apply(c) && right.apply(c);
+                case "||" -> (c) -> left.apply(c) || right.apply(c);
+                case "!=" -> (c) -> left.apply(c) != right.apply(c);
+                default -> throw new UnsupportedOperationException();
+            };
         }
         if (ctx.number_comparison() != null) {
             Function<Context, Double> leftNumberExpression = calculateNumberExpression(ctx.number_expression(0));
             Function<Context, Double> rightNumberExpression = calculateNumberExpression(ctx.number_expression(1));
-            switch (ctx.number_comparison().getText()) {
-                case ">":
-                    return (c) -> leftNumberExpression.apply(c) > rightNumberExpression.apply(c);
-                case "<":
-                    return (c) -> leftNumberExpression.apply(c) < rightNumberExpression.apply(c);
-                case ">=":
-                    return (c) -> leftNumberExpression.apply(c) >= rightNumberExpression.apply(c);
-                case "<=":
-                    return (c) -> leftNumberExpression.apply(c) <= rightNumberExpression.apply(c);
-                case "==":
-                    return (c) -> 1e-10 > Math.abs(leftNumberExpression.apply(c) - rightNumberExpression.apply(c));
-            }
+            return switch (ctx.number_comparison().getText()) {
+                case ">" -> (c) -> leftNumberExpression.apply(c) > rightNumberExpression.apply(c);
+                case "<" -> (c) -> leftNumberExpression.apply(c) < rightNumberExpression.apply(c);
+                case ">=" -> (c) -> leftNumberExpression.apply(c) >= rightNumberExpression.apply(c);
+                case "<=" -> (c) -> leftNumberExpression.apply(c) <= rightNumberExpression.apply(c);
+                case "==" -> (c) -> 1e-10 > Math.abs(leftNumberExpression.apply(c) - rightNumberExpression.apply(c));
+                default -> throw new UnsupportedOperationException();
+            };
         }
         return (c) -> false;
     }
@@ -295,6 +300,8 @@ public class SimItGrammarParser extends SIMITBaseListener {
                         stack.pop();
                         if (!stack.empty()) {
                             cur = stack.peek();//  don't pop if priority is less
+                        } else {
+                            break;
                         }
                     }
                 }
@@ -335,17 +342,10 @@ public class SimItGrammarParser extends SIMITBaseListener {
         if (vocabulary.getLiteralName(token.getType()) == null) {
             return false;
         }
-        switch (vocabulary.getLiteralName(token.getType())) {
-            case "'^'":
-            case "'*'":
-            case "'/'":
-            case "'%'":
-            case "'+'":
-            case "'-'":
-                return true;
-            default:
-                return false;
-        }
+        return switch (vocabulary.getLiteralName(token.getType())) {
+            case "'^'", "'*'", "'/'", "'%'", "'+'", "'-'" -> true;
+            default -> false;
+        };
     }
 
     private boolean hasHigherPriority(Token stackToken, Token consideredToken) {
@@ -381,27 +381,17 @@ public class SimItGrammarParser extends SIMITBaseListener {
         if (operation == null) {
             return 0;
         }
-        switch (operation) {
-            case "'^'":
-                return 0;
-            case "'*'":
-                return 1;
-            case "'/'":
-            case "'%'":
-                return 2;
-            case "'+'":
-                return 3;
-            case "'-'":
-                return 4;
-            case "'('":
-            case "')'":
-                return -1;
-
-            case "','":
-                return 15;
-            default:
-                return 0; // for functions
-        }
+        return switch (operation) {
+            case "'^'" -> 0;
+            case "'*'" -> 1;
+            case "'/'", "'%'" -> 2;
+            case "'+'" -> 3;
+            case "'-'" -> 4;
+            case "'('", "')'" -> -1;
+            case "','" -> 15;
+            // for functions
+            default -> 0;
+        };
     }
 
     private double calculatePolish(List<Tok> tokens, Context c) {
@@ -433,60 +423,22 @@ public class SimItGrammarParser extends SIMITBaseListener {
                 }
                 double v1 = stack.pop().value;
                 switch (token.name) {
-                    case "+":
-                        stack.push(new Tok(TokType.NUM, null, v1 + v2));
-                        break;
-                    case "-":
-                        stack.push(new Tok(TokType.NUM, null, v1 - v2));
-                        break;
-                    case "/":
-                        stack.push(new Tok(TokType.NUM, null, v1 / v2));
-                        break;
-                    case "*":
-                        stack.push(new Tok(TokType.NUM, null, v1 * v2));
-                        break;
-                    case "%":
-                        stack.push(new Tok(TokType.NUM, null, Math.round(v1) % Math.round(v2)));
-                        break;
-                    case "^":
-                        stack.push(new Tok(TokType.NUM, null, Math.pow(v1, v2)));
-                        break;
-                    case "rand":
-                        stack.push(new Tok(TokType.NUM, null, v1 + (v2 - v1) * rand.nextDouble()));
-                        break;
-                    case "max":
-                        stack.push(new Tok(TokType.NUM, null, Math.max(v1, v2)));
-                        break;
-                    case "min":
-                        stack.push(new Tok(TokType.NUM, null, Math.min(v1, v2)));
-                        break;
+                    case "+" -> stack.push(new Tok(TokType.NUM, null, v1 + v2));
+                    case "-" -> stack.push(new Tok(TokType.NUM, null, v1 - v2));
+                    case "/" -> stack.push(new Tok(TokType.NUM, null, v1 / v2));
+                    case "*" -> stack.push(new Tok(TokType.NUM, null, v1 * v2));
+                    case "%" -> stack.push(new Tok(TokType.NUM, null, Math.round(v1) % Math.round(v2)));
+                    case "^" -> stack.push(new Tok(TokType.NUM, null, Math.pow(v1, v2)));
+                    case "rand" -> stack.push(new Tok(TokType.NUM, null, v1 + (v2 - v1) * rand.nextDouble()));
+                    case "max" -> stack.push(new Tok(TokType.NUM, null, Math.max(v1, v2)));
+                    case "min" -> stack.push(new Tok(TokType.NUM, null, Math.min(v1, v2)));
                 }
             }
         }
         return stack.pop().value;
     }
 
-    private class Tok {
-        public TokType type;
-        public String name;
-        public double value;
-
-        public Tok(TokType type, String name, double value) {
-            this.type = type;
-            this.name = name;
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("Tok{");
-            sb.append("type=").append(type);
-            sb.append(", name='").append(name).append('\'');
-            sb.append(", value=").append(value);
-            sb.append('}');
-            return sb.toString();
-        }
-    }
+    private record Tok(TokType type, String name, double value){}
 
     private enum TokType {
         NUM, ID, OP

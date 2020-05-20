@@ -1,23 +1,23 @@
 init_environment:
 iterations = 50;
 money=100;
-interest=0.01;
+interest=0.03;
 per_month=50;
-d = 10;
 init_population:
 size=50;
 v=10;
 m=20;
 
 rules:
-d=10+d*1.001;
-if (time >= 12){
-    interest = 0;
+
+money=money+per_month;
+if ( time%12 == 0){
+    money=money*(1+interest)+per_month;
 }
-if (-d > money){
-    d = -d;
-}
-money=money*(1+interest)+per_month;
-if (money > (2000+per_month^2/10)){
+if( time > 20){
     per_month = 100;
+}
+
+if (money > 3000){
+    interest = 0.01;
 }

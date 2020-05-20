@@ -2,7 +2,7 @@ grammar SIMIT;
 
 mainblock throws GrammarParseException:
     initEnv
-    initPop
+    initPop?
     'rules:'
     rules
     ;
