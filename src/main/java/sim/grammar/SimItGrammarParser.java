@@ -7,6 +7,8 @@ import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.Vocabulary;
 import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
+import sim.algorithm.ReversePolishNotation;
+import sim.algorithm.ReversePolishNotation.Tok;
 import sim.antlr.SIMITBaseListener;
 import sim.antlr.SIMITLexer;
 import sim.antlr.SIMITParser;
@@ -21,9 +23,14 @@ import sim.core.simulation.Simulation;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
-import java.util.Stack;
 import java.util.function.Function;
+
+import static sim.algorithm.ReversePolishNotation.TokType.COMMA;
+import static sim.algorithm.ReversePolishNotation.TokType.CP;
+import static sim.algorithm.ReversePolishNotation.TokType.FUN;
+import static sim.algorithm.ReversePolishNotation.TokType.ID;
+import static sim.algorithm.ReversePolishNotation.TokType.OP;
+import static sim.algorithm.ReversePolishNotation.TokType.OPERATION;
 
 public class SimItGrammarParser extends SIMITBaseListener {
     private CommonTokenStream commonTokenStream;
@@ -42,7 +49,8 @@ public class SimItGrammarParser extends SIMITBaseListener {
     public int calcNumber = 0;
     public int calcBool = 0;
     private int saveEach = 1;
-    private Random rand = new Random(1);
+
+    private ReversePolishNotation RPN = new ReversePolishNotation();
 
     public Simulation parseToSimulation(String test) {
         return parseToSimulation(test, 10_000);
@@ -59,7 +67,7 @@ public class SimItGrammarParser extends SIMITBaseListener {
         SIMITParser.MainblockContext mainblock = parser.mainblock();
         SIMITParser.InitPopContext initPopContext = mainblock.initPop();
         // if user didn't add init population block then 0 population
-        if(initPopContext == null){
+        if (initPopContext == null) {
             initPop(0);
         }
         ParseTreeWalker walker = new ParseTreeWalker();
@@ -135,7 +143,7 @@ public class SimItGrammarParser extends SIMITBaseListener {
         initPop(populationSize);
     }
 
-    private void initPop(int populationSize){
+    private void initPop(int populationSize) {
         double[][] initPopValues = new double[populationSize][popVariables.size()];
         for (int i = 0; i < populationSize; i++) {
             for (int j = 0; j < popVariables.size(); j++) {
@@ -170,48 +178,18 @@ public class SimItGrammarParser extends SIMITBaseListener {
 
     private Function<Context, Double> calculateNumberExpression(SIMITParser.Number_expressionContext ctx) {
         calcNumber++;
-        List<Tok> tokens = reversePolishNotation(ctx);
-        return (c) -> calculatePolish(tokens, c);
+        Interval sourceInterval = ctx.getSourceInterval();
+        List<Tok> tokens = convertToTok(commonTokenStream.get(sourceInterval.a, sourceInterval.b));
+        List<Tok> toks = RPN.reversePolishNotation(tokens);
+        return (c) -> RPN.calculatePolishNumber(toks, c);
     }
 
-    //TODO adjust for priorities
     private Function<Context, Boolean> booleanExpression(SIMITParser.Boolean_expressionContext ctx) {
         calcBool++;
-        if (ctx.BOOL() != null) {
-            boolean value = ctx.BOOL().getSymbol().getText().equals("true");
-            return (c) -> value;
-        }
-
-        if (ctx.NOT() != null) {
-            return (c) -> !booleanExpression(ctx.boolean_expression(0)).apply(c);
-        }
-        if (ctx.OP() != null) {
-            return booleanExpression(ctx.boolean_expression(0));
-        }
-        if (ctx.logical_operation() != null) {
-            Function<Context, Boolean> right = booleanExpression(ctx.boolean_expression(1));
-            Function<Context, Boolean> left = booleanExpression(ctx.boolean_expression(0));
-            return switch (ctx.logical_operation().getText()) {
-                case "==" -> (c) -> left.apply(c) == right.apply(c);
-                case "&&" -> (c) -> left.apply(c) && right.apply(c);
-                case "||" -> (c) -> left.apply(c) || right.apply(c);
-                case "!=" -> (c) -> left.apply(c) != right.apply(c);
-                default -> throw new UnsupportedOperationException();
-            };
-        }
-        if (ctx.number_comparison() != null) {
-            Function<Context, Double> leftNumberExpression = calculateNumberExpression(ctx.number_expression(0));
-            Function<Context, Double> rightNumberExpression = calculateNumberExpression(ctx.number_expression(1));
-            return switch (ctx.number_comparison().getText()) {
-                case ">" -> (c) -> leftNumberExpression.apply(c) > rightNumberExpression.apply(c);
-                case "<" -> (c) -> leftNumberExpression.apply(c) < rightNumberExpression.apply(c);
-                case ">=" -> (c) -> leftNumberExpression.apply(c) >= rightNumberExpression.apply(c);
-                case "<=" -> (c) -> leftNumberExpression.apply(c) <= rightNumberExpression.apply(c);
-                case "==" -> (c) -> 1e-10 > Math.abs(leftNumberExpression.apply(c) - rightNumberExpression.apply(c));
-                default -> throw new UnsupportedOperationException();
-            };
-        }
-        return (c) -> false;
+        Interval sourceInterval = ctx.getSourceInterval();
+        List<Tok> tokens = convertToTok(commonTokenStream.get(sourceInterval.a, sourceInterval.b));
+        List<Tok> toks = RPN.reversePolishNotation(tokens);
+        return (c) -> RPN.calculatePolishBoolean(toks, c);
     }
 
     private BlockRule blockRule(SIMITParser.RulesContext ctx) {
@@ -229,105 +207,38 @@ public class SimItGrammarParser extends SIMITBaseListener {
     }
 
     /**
-     * Binary priority:
-     * ^
-     * *
-     * /
-     * +
-     * -
-     * TODO adjust for functions where only OP is assumed for now
+     * Converts tokens from ANTLR to Toks - class more suitable to calculate using polish notation
      *
-     * @param ctx
-     * @return
+     * @param tokens input list of tokens from ANTLR
+     * @return converted list of Toks
      */
-    private List<Tok> reversePolishNotation(SIMITParser.Number_expressionContext ctx) {
-        List<Tok> result = new ArrayList<>();
-        Interval sourceInterval = ctx.getSourceInterval();
-        List<Token> tokens = commonTokenStream.get(sourceInterval.a, sourceInterval.b);
-        Stack<Token> stack = new Stack<>();
-        //https://en.wikipedia.org/wiki/Shunting-yard_algorithm
-        // with small adjustment for expressions in functions. Wiki example works only for constants as arguments
+    private List<ReversePolishNotation.Tok> convertToTok(List<Token> tokens) {
+        List<ReversePolishNotation.Tok> result = new ArrayList<>();
         for (Token token : tokens) {
-            // if postfix function (like !) or number/identificator then add to result
-            if ("NUMBER".equals(vocabulary.getSymbolicName(token.getType()))) {
-                result.add(new Tok(TokType.NUM, null, Double.parseDouble(token.getText())));
-                continue;
+            if (isOP(token)) {
+                result.add(new Tok(OP, "("));
             }
-            if ("IDENTIFIER".equals(vocabulary.getSymbolicName(token.getType()))) {
-                result.add(new Tok(TokType.ID, token.getText(), 0));
-                continue;
+            if (isCP(token)) {
+                result.add(new Tok(CP, ")"));
+            }
+            if (isComma(token)) {
+                result.add(new Tok(COMMA, ","));
             }
             if (isFunction(token)) {
-                stack.push(token);
-                continue;
+                result.add(new Tok(FUN, token.getText()));
             }
-
-            // if prefix function, like sin, sum,... then put into stack
-            // if OP then put to stack
-            if (isOP(token)) {
-                stack.push(token);
-                continue;
-            }
-            // pop stack to result until OP
-            if (isCP(token)) {
-                Token cur = stack.pop();
-                while (!isOP(cur)) {
-                    if (!isComma(cur)) {
-                        result.add(new Tok(TokType.OP, cur.getText(), 0));
-                    }
-                    cur = stack.pop();
-                }
-                if (!stack.empty() && isOP(stack.peek())) {
-                    stack.pop();
-                }
-                continue;
-            }
-            // if binary operation o1, while on top of stack is 1)prefix function 2) operation with higher
-            // priority 3) left-associative operation with priority like o1 -> push stack element to result
-            // then put o1 to stack
             if (isBinaryOperation(token)) {
-                if (!stack.empty()) {
-                    Token cur = stack.peek();
-                    while ((!isBinaryOperation(cur)
-                            || (isBinaryOperation(cur) && hasHigherPriority(cur, token))
-                            || (hasEqualPriority(cur, token) && isLeftAssociative(token)))
-                            && !isOP(cur)
-                    ) {
-                        if (!isComma(cur)) {
-                            result.add(new Tok(TokType.OP, cur.getText(), 0));
-                        }
-
-                        stack.pop();
-                        if (!stack.empty()) {
-                            cur = stack.peek();//  don't pop if priority is less
-                        } else {
-                            break;
-                        }
-                    }
-                }
-                stack.push(token);
-                continue;
+                result.add(new Tok(OPERATION, token.getText()));
             }
-
-            if (isComma(token)) {
-                Token cur = stack.peek();
-                while (!(isOP(cur) || isComma(cur))) {
-                    result.add(new Tok(TokType.OP, cur.getText(), 0));
-                    stack.pop();
-                    if (!stack.empty()) {
-                        cur = stack.peek();//  don't pop if priority is less
-                    }
-                }
-                stack.push(token);
-
+            if ("NUMBER".equals(vocabulary.getSymbolicName(token.getType()))) {
+                result.add(new Tok(Double.parseDouble(token.getText())));
             }
-        }
-        while (!stack.empty()) {
-            Token pop = stack.pop();
-            if (!isComma(pop)) {
-                result.add(new Tok(TokType.OP, pop.getText(), 0));
+            if ("IDENTIFIER".equals(vocabulary.getSymbolicName(token.getType()))) {
+                result.add(new Tok(ID, token.getText()));
             }
-
+            if ("BOOL".equals(vocabulary.getSymbolicName(token.getType()))) {
+                result.add(new Tok(token.getText().equals("true")));
+            }
         }
         return result;
     }
@@ -335,7 +246,8 @@ public class SimItGrammarParser extends SIMITBaseListener {
     private boolean isFunction(Token token) {
         return "'rand'".equals(vocabulary.getLiteralName(token.getType()))
                 || "'max'".equals(vocabulary.getLiteralName(token.getType()))
-                || "'min'".equals(vocabulary.getLiteralName(token.getType()));
+                || "'min'".equals(vocabulary.getLiteralName(token.getType()))
+                || "'!'".equals(vocabulary.getLiteralName(token.getType()));
     }
 
     private boolean isBinaryOperation(Token token) {
@@ -343,21 +255,9 @@ public class SimItGrammarParser extends SIMITBaseListener {
             return false;
         }
         return switch (vocabulary.getLiteralName(token.getType())) {
-            case "'^'", "'*'", "'/'", "'%'", "'+'", "'-'" -> true;
+            case "'^'", "'*'", "'/'", "'%'", "'+'", "'-'", "'=='", "'<'", "'>'", "'>='", "'<='", "'&&'", "'||'", "'!='" -> true;
             default -> false;
         };
-    }
-
-    private boolean hasHigherPriority(Token stackToken, Token consideredToken) {
-        int sp = operationPriority(vocabulary.getLiteralName(stackToken.getType()));
-        int cp = operationPriority(vocabulary.getLiteralName(consideredToken.getType()));
-        return sp <= cp;
-    }
-
-    private boolean hasEqualPriority(Token stackToken, Token consideredToken) {
-        int sp = operationPriority(vocabulary.getLiteralName(stackToken.getType()));
-        int cp = operationPriority(vocabulary.getLiteralName(consideredToken.getType()));
-        return sp == cp;
     }
 
     private boolean isOP(Token token) {
@@ -372,76 +272,5 @@ public class SimItGrammarParser extends SIMITBaseListener {
         return "','".equals(vocabulary.getLiteralName(token.getType()));
     }
 
-    // only ^ is right associative
-    private boolean isLeftAssociative(Token token) {
-        return !"'^'".equals(token.getText());
-    }
-
-    private int operationPriority(String operation) {
-        if (operation == null) {
-            return 0;
-        }
-        return switch (operation) {
-            case "'^'" -> 0;
-            case "'*'" -> 1;
-            case "'/'", "'%'" -> 2;
-            case "'+'" -> 3;
-            case "'-'" -> 4;
-            case "'('", "')'" -> -1;
-            case "','" -> 15;
-            // for functions
-            default -> 0;
-        };
-    }
-
-    private double calculatePolish(List<Tok> tokens, Context c) {
-        Stack<Tok> stack = new Stack<>();
-        for (Tok token : tokens) {
-            if (token.type == TokType.NUM) {
-                stack.push(token);
-                continue;
-            }
-            if (token.type == TokType.ID) {
-                if (token.name.equals("time")) {
-                    stack.push(new Tok(TokType.NUM, null, c.getTime()));
-                    continue;
-                }
-                stack.push(new Tok(TokType.NUM, null, c.getEnvironment().get(token.name)));
-                continue;
-            }
-            if (token.type == TokType.OP) {
-
-                double v2 = stack.pop().value;
-                // in case of unary minus or plus
-                if (stack.empty() && token.name.equals("-")) {
-                    stack.push(new Tok(TokType.NUM, null, -v2));
-                    continue;
-                }
-                if (stack.empty() && token.name.equals("+")) {
-                    stack.push(new Tok(TokType.NUM, null, v2));
-                    continue;
-                }
-                double v1 = stack.pop().value;
-                switch (token.name) {
-                    case "+" -> stack.push(new Tok(TokType.NUM, null, v1 + v2));
-                    case "-" -> stack.push(new Tok(TokType.NUM, null, v1 - v2));
-                    case "/" -> stack.push(new Tok(TokType.NUM, null, v1 / v2));
-                    case "*" -> stack.push(new Tok(TokType.NUM, null, v1 * v2));
-                    case "%" -> stack.push(new Tok(TokType.NUM, null, Math.round(v1) % Math.round(v2)));
-                    case "^" -> stack.push(new Tok(TokType.NUM, null, Math.pow(v1, v2)));
-                    case "rand" -> stack.push(new Tok(TokType.NUM, null, v1 + (v2 - v1) * rand.nextDouble()));
-                    case "max" -> stack.push(new Tok(TokType.NUM, null, Math.max(v1, v2)));
-                    case "min" -> stack.push(new Tok(TokType.NUM, null, Math.min(v1, v2)));
-                }
-            }
-        }
-        return stack.pop().value;
-    }
-
-    private record Tok(TokType type, String name, double value){}
-
-    private enum TokType {
-        NUM, ID, OP
-    }
 
 }

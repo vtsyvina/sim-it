@@ -4,9 +4,6 @@ package sim.grammar;
 import org.junit.Test;
 import sim.core.simulation.Simulation;
 
-import java.io.IOException;
-import java.util.Scanner;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static sim.start.Start.fileToString;
@@ -47,6 +44,7 @@ public class SimItGrammarParserTest {
         assertEquals(10, simulation.getContext().getEnvironment().get("it", 10), 1e-5);
         assertEquals(2, simulation.getContext().getEnvironment().get("it", 2), 1e-5);
         assertEquals(0, simulation.getContext().getEnvironment().get("it", 3), 1e-5);
+        assertEquals(0, simulation.getContext().getEnvironment().get("it", 4), 1e-5);
         assertEquals(5, simulation.getContext().getEnvironment().get("it", 5), 1e-5);
 
     }

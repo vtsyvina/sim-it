@@ -4,6 +4,6 @@ it=0;
 
 rules:
 it=time;
-if (time > 2 && time < 5){
+if (!(true && (69 > 42)) || time > 2 && time < 5){
 it = 0;
 }

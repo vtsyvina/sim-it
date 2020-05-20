@@ -67,7 +67,7 @@ boolean_expression:
     NOT boolean_expression |
     ;
 number_comparison:
-    '==' | '<' | '>' | '>=' | '<=';
+    '!=' | '==' | '<' | '>' | '>=' | '<=';
 logical_operation:
     '&&' | '||' | '==' | '!=';
 
