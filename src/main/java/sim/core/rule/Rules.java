@@ -16,6 +16,10 @@ public class Rules {
         return new AssignmentRule(varIndex, individualId, expression);
     }
 
+    public static Rule assignment(int varIndex, Function<Context, Integer> individualIndexExpression, Function<Context, Double> expression) {
+        return new AssignmentRule(varIndex, individualIndexExpression, expression);
+    }
+
     public static Rule if_(Function<Context, Boolean> expression, BlockRule thenBlock, BlockRule elseBlock) {
         return new IfRule(expression, thenBlock, elseBlock);
     }

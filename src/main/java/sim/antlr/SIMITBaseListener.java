@@ -196,6 +196,18 @@ public class SIMITBaseListener implements SIMITListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterIndividual_var(SIMITParser.Individual_varContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitIndividual_var(SIMITParser.Individual_varContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterBoolean_expression(SIMITParser.Boolean_expressionContext ctx) { }
 	/**
 	 * {@inheritDoc}

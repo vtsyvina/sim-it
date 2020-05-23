@@ -49,4 +49,29 @@ public class SimItGrammarParserTest {
 
     }
 
+    @Test
+    public void individualVarTest() {
+        Simulation simulation = parser.parseToSimulation(fileToString("src/test/resources/individual_vars.txt"), 3);
+        simulation.run();
+        simulation.getContext().getEnvironment().print();
+        simulation.getContext().getPopulation().getIndividual(0).print();
+        simulation.getContext().getPopulation().getIndividual(10).print();
+
+        assertEquals(12, simulation.getContext().getPopulation().getIndividual(0).get("happiness", 4), 1e-5);
+        assertEquals(132, simulation.getContext().getPopulation().getIndividual(10).get("happiness", 4), 1e-5);
+
+    }
+
+    @Test
+    public void complexIndividualVarTest() {
+        Simulation simulation = parser.parseToSimulation(fileToString("src/test/resources/complex_individual_vars.txt"), 1);
+        simulation.run();
+        simulation.getContext().getEnvironment().print();
+        simulation.getContext().getPopulation().getIndividual(0).print();
+        simulation.getContext().getPopulation().getIndividual(10).print();
+
+        assertEquals(36, simulation.getContext().getPopulation().getIndividual(0).get("happiness", 15), 1e-5);
+        assertEquals(46, simulation.getContext().getPopulation().getIndividual(10).get("happiness", 15), 1e-5);
+
+    }
 }

@@ -24,17 +24,21 @@ public class Start {
      * @param args
      */
     public static void main(String[] args) {
+        runFromFile();
+//        toyExample();
         System.out.println("Sim it!");
+    }
+
+    private static void runFromFile() {
         SimItGrammarParser simItGrammarListener = new SimItGrammarParser();
-        Simulation simulation = simItGrammarListener.parseToSimulation(fileToString("examples/complex_percent.txt"),1);
+        Simulation simulation = simItGrammarListener.parseToSimulation(fileToString("examples/complex_individual_vars.txt"),1);
 //        Simulation simulation = simItGrammarListener.parseToSimulation(fileToString("src/test/resources/arithmetic.txt"), 10_000);
         simulation.run();
         Context context = simulation.getContext();
-        context.getEnvironment().print();
+//        context.getEnvironment().print();
         System.out.println();
         System.out.println(simItGrammarListener.calcNumber);
         System.out.println(simItGrammarListener.calcBool);
-//        toyExample();
     }
 
     public static String fileToString(String filename){
@@ -48,7 +52,7 @@ public class Start {
 
     private static void toyExample() {
         int populationSize = 50;
-        int iterations = 100000;
+        int iterations = 10000;
         List<String> envNames = new ArrayList<>();
         envNames.add("money");
         envNames.add("tot");

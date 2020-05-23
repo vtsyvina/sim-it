@@ -22,6 +22,7 @@ import sim.core.rule.Rules;
 import sim.core.simulation.Simulation;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.function.Function;
 
@@ -50,7 +51,7 @@ public class SimItGrammarParser extends SIMITBaseListener {
     public int calcBool = 0;
     private int saveEach = 1;
 
-    private ReversePolishNotation RPN = new ReversePolishNotation();
+    private ReversePolishNotation RPN;
 
     public Simulation parseToSimulation(String test) {
         return parseToSimulation(test, 10_000);
@@ -151,6 +152,12 @@ public class SimItGrammarParser extends SIMITBaseListener {
             }
         }
         population = new Population(populationSize, popVariables, initPopValues, iterations, saveEach);
+        if (populationSize == 0) {
+            RPN = new ReversePolishNotation(new HashSet<>());
+        } else {
+            RPN = new ReversePolishNotation(population.getIndividual(0).getNamesMap().keySet());
+        }
+
     }
 
     @Override
@@ -162,6 +169,11 @@ public class SimItGrammarParser extends SIMITBaseListener {
 
 
     public Rule assignment(SIMITParser.AssignmentContext ctx) {
+        // if we assign individual
+        if (ctx.IDENTIFIER() == null) {
+            SIMITParser.Individual_varContext individual_varContext = ctx.individual_var();
+            return calculatePopulationNumberExpression(individual_varContext, ctx.number_expression());
+        }
         String identifier = ctx.IDENTIFIER().getSymbol().getText();
         return Rules.assignment(environment.getVariableIndex(identifier), calculateNumberExpression(ctx.number_expression()));
     }
@@ -182,6 +194,33 @@ public class SimItGrammarParser extends SIMITBaseListener {
         List<Tok> tokens = convertToTok(commonTokenStream.get(sourceInterval.a, sourceInterval.b));
         List<Tok> toks = RPN.reversePolishNotation(tokens);
         return (c) -> RPN.calculatePolishNumber(toks, c);
+    }
+
+    private Rule calculatePopulationNumberExpression(SIMITParser.Individual_varContext varContext, SIMITParser.Number_expressionContext ctx) {
+        calcNumber++;
+        Interval varSourceInterval = varContext.number_expression().getSourceInterval();
+        List<Tok> varTokens = convertToTok(commonTokenStream.get(varSourceInterval.a, varSourceInterval.b));
+        List<Tok> varToks = RPN.reversePolishNotation(varTokens);
+        Interval sourceInterval = ctx.getSourceInterval();
+        List<Tok> tokens = convertToTok(commonTokenStream.get(sourceInterval.a, sourceInterval.b));
+        List<Tok> toks = RPN.reversePolishNotation(tokens);
+        boolean hasIInLeft = varTokens.stream().anyMatch(t -> "i".equals(t.name));
+        //no need to loop, just a single individual
+        if (!hasIInLeft) {
+            return Rules.assignment(population.getIndividual(0).getVariableIndex(varContext.IDENTIFIER().getText()),
+                    (c) -> (int) RPN.calculatePolishNumber(varToks, c),
+                    (c) -> RPN.calculatePolishNumber(toks, c));
+        }
+        int populationSize = population.size();
+        int varIndex = population.getIndividual(0).getVariableIndex(varContext.IDENTIFIER().getText());
+        return Rules.rule((c) -> {
+            // for each i calculate the index and calculate the value and set it for individual
+            for (int i = 0; i < populationSize; i++) {
+                int index = (int) RPN.calculatePolishNumber(varToks, c, i);
+                double value = RPN.calculatePolishNumber(toks, c, i);
+                c.getPopulation().getIndividual(index).set(varIndex, value);
+            }
+        });
     }
 
     private Function<Context, Boolean> booleanExpression(SIMITParser.Boolean_expressionContext ctx) {
@@ -226,6 +265,7 @@ public class SimItGrammarParser extends SIMITBaseListener {
             }
             if (isFunction(token)) {
                 result.add(new Tok(FUN, token.getText()));
+                continue; // some identifiers are functions
             }
             if (isBinaryOperation(token)) {
                 result.add(new Tok(OPERATION, token.getText()));
@@ -244,6 +284,11 @@ public class SimItGrammarParser extends SIMITBaseListener {
     }
 
     private boolean isFunction(Token token) {
+        String symbolicName = vocabulary.getSymbolicName(token.getType());
+        //if identifier is a population variable then we need to treat it like a function because of the index
+        if ("IDENTIFIER".equals(symbolicName) && popVariables.contains(token.getText())) {
+            return true;
+        }
         return "'rand'".equals(vocabulary.getLiteralName(token.getType()))
                 || "'max'".equals(vocabulary.getLiteralName(token.getType()))
                 || "'min'".equals(vocabulary.getLiteralName(token.getType()))
@@ -261,11 +306,13 @@ public class SimItGrammarParser extends SIMITBaseListener {
     }
 
     private boolean isOP(Token token) {
-        return "OP".equals(vocabulary.getSymbolicName(token.getType()));
+        return "OP".equals(vocabulary.getSymbolicName(token.getType()))
+                || "OB".equals(vocabulary.getSymbolicName(token.getType()));
     }
 
     private boolean isCP(Token token) {
-        return "CP".equals(vocabulary.getSymbolicName(token.getType()));
+        return "CP".equals(vocabulary.getSymbolicName(token.getType()))
+                || "CB".equals(vocabulary.getSymbolicName(token.getType()));
     }
 
     private boolean isComma(Token token) {

@@ -24,7 +24,9 @@ initPopVar:
 popSize:
     'size=' NUMBER ';';
 assignment:
-    IDENTIFIER '=' number_expression ';';
+    individual_var '=' number_expression ';' |
+    IDENTIFIER '=' number_expression ';'
+    ;
 
 ru:
      if_rule | assignment;
@@ -34,6 +36,7 @@ rules:
 
 
 number_expression:
+individual_var |
 number_expression operation number_expression|
     (PLUS|MINUS)? NUMBER |
     (PLUS|MINUS)? IDENTIFIER |
@@ -53,6 +56,9 @@ max_function:
     'max' OP number_expression ',' number_expression CP;
 min_function:
     'min' OP number_expression ',' number_expression CP;
+
+individual_var:
+    IDENTIFIER OB number_expression CB;
 //MULTIPLY:
 //    '*';
 //DIVIDE:
@@ -103,6 +109,10 @@ fragment EXP
 
 BOOL:
     'true' | 'false';
+OB:
+    '[';
+CB:
+    ']';
 
 OP:
     '(';
@@ -113,7 +123,7 @@ CP:
 IF:
     'if';
 IDENTIFIER:
-    [A-Za-z0-9_]+;
+    [A-Za-z][A-Za-z0-9_]*;
 
 WS
     :   [ \t\r\n]+ -> skip

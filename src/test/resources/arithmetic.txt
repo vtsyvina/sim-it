@@ -1,5 +1,5 @@
 init_environment:
-iterations =1000000;
+iterations =100000;
 money=0;
 e=2;
 mod=0;

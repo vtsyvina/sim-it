@@ -56,7 +56,8 @@ public class Context {
      */
     public void endIteration(){
         time++;
-        for (int i = 0; i < getPopulation().size(); i++) {
+        int size = getPopulation().size();
+        for (int i = 0; i < size; i++) {
             getPopulation().getIndividual(i).endIteration();
         }
         getEnvironment().endIteration();

@@ -101,6 +101,12 @@ public interface SIMITVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitMin_function(SIMITParser.Min_functionContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link SIMITParser#individual_var}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitIndividual_var(SIMITParser.Individual_varContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link SIMITParser#boolean_expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

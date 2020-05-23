@@ -1,0 +1,11 @@
+init_environment:
+iterations =12;
+t=0;
+init_population:
+size=50;
+happiness=0;
+money=5;
+
+rules:
+happiness[i]=happiness[i]+(i+1);
+

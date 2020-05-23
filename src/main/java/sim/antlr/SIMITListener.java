@@ -158,6 +158,16 @@ public interface SIMITListener extends ParseTreeListener {
 	 */
 	void exitMin_function(SIMITParser.Min_functionContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link SIMITParser#individual_var}.
+	 * @param ctx the parse tree
+	 */
+	void enterIndividual_var(SIMITParser.Individual_varContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SIMITParser#individual_var}.
+	 * @param ctx the parse tree
+	 */
+	void exitIndividual_var(SIMITParser.Individual_varContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link SIMITParser#boolean_expression}.
 	 * @param ctx the parse tree
 	 */

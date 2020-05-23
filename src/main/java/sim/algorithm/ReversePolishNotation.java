@@ -5,6 +5,7 @@ import sim.core.model.Context;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.Stack;
 
 import static sim.algorithm.ReversePolishNotation.TokType.BOOL;
@@ -18,6 +19,11 @@ import static sim.algorithm.ReversePolishNotation.TokType.OPERATION;
 
 public class ReversePolishNotation {
     private Random rand = new Random(1);
+    private Set<String> populationVariableNames;
+
+    public ReversePolishNotation(Set<String> populationVariableNames){
+        this.populationVariableNames = populationVariableNames;
+    }
 
 
     /**
@@ -63,9 +69,6 @@ public class ReversePolishNotation {
                         result.add(cur);
                     }
                     cur = stack.pop();
-                }
-                if (!stack.empty() && stack.peek().type == OP) {
-                    stack.pop();
                 }
                 continue;
             }
@@ -164,7 +167,17 @@ public class ReversePolishNotation {
         return calculatePolish(tokens, c).value;
     }
 
+    // i - variable of the loop if we calculate for an individual
+    public double calculatePolishNumber(List<Tok> tokens, Context c, int i) {
+        return calculatePolish(tokens, c, i).value;
+    }
+
     private Tok calculatePolish(List<Tok> tokens, Context c) {
+        return calculatePolish(tokens, c, 0);
+    }
+
+    // i - variable of the loop if we calculate for an individual
+    private Tok calculatePolish(List<Tok> tokens, Context c, int i) {
         Stack<Tok> stack = new Stack<>();
         for (Tok token : tokens) {
             if (token.type == NUM || token.type == BOOL) {
@@ -174,6 +187,10 @@ public class ReversePolishNotation {
             if (token.type == TokType.ID) {
                 if (token.name.equals("time")) {
                     stack.push(new Tok(c.getTime()));
+                    continue;
+                }
+                if(token.name.equals("i")){
+                    stack.push(new Tok(i));
                     continue;
                 }
                 stack.push(new Tok(c.getEnvironment().get(token.name)));
@@ -195,6 +212,10 @@ public class ReversePolishNotation {
                 }
                 if (token.name.equals("!")) {
                     stack.push(new Tok(!b2));
+                    continue;
+                }
+                if (populationVariableNames.contains(token.name)){
+                    stack.push(new Tok(c.getPopulation().getIndividual((int)Math.round(v2)).get(token.name)));
                     continue;
                 }
                 Tok pop1 = stack.pop();
